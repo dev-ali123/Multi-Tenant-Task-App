@@ -1,9 +1,11 @@
 "use client";
 
+import type { CSSProperties, ReactNode } from 'react';
+
 type AlertProps = {
   variant?: 'error' | 'success' | 'info';
-  children: React.ReactNode;
-  style?: React.CSSProperties;
+  children?: ReactNode;
+  style?: CSSProperties;
 };
 
 export default function Alert({ variant = 'info', children, style }: AlertProps) {
