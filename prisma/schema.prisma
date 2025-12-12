@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum TaskStatus {
+  TODO
+  DOING
+  DONE
+}
+
+model User {
+  id            String        @id @default(uuid())
+  email         String        @unique
+  name          String
+  passwordHash  String
+  memberships   Membership[]
+  tasksAssigned Task[]        @relation("TaskAssignee")
+  invites       Invite[]      @relation("InvitedBy")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Tenant {
+  id          String       @id @default(uuid())
+  name        String
+  memberships Membership[]
+  tasks       Task[]
+  invites     Invite[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Membership {
+  userId   String
+  tenantId String
+  role     Role
+
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@id([userId, tenantId])
+  @@index([tenantId])
+}
+
+model Invite {
+  id         String   @id @default(uuid())
+  tenantId   String
+  email      String
+  token      String   @unique
+  status     String   @default("PENDING")
+  expiresAt  DateTime
+  invitedById String
+
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invitedBy  User     @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Task {
+  id          String      @id @default(uuid())
+  tenantId    String
+  title       String
+  description String
+  status      TaskStatus  @default(TODO)
+  dueDate     DateTime?
+  assigneeId  String?
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignee    User?       @relation("TaskAssignee", fields: [assigneeId], references: [id])
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([tenantId])
+  @@index([assigneeId])
+  @@index([status])
+}
+
+
